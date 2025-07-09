@@ -166,7 +166,7 @@ export default function InsightsDashboard({ onBack, user, transactions }: Insigh
       return acc;
     }, {} as Record<string, number>);
 
-    const totalSpent = Object.values(categoryTotals).reduce((sum, amount) => sum + amount, 0);
+    const totalSpent = (Object.values(categoryTotals) as number[]).reduce((sum, amount) => sum + amount, 0);
     const avgTransaction = totalSpent / filteredTransactions.length || 0;
 
     return {
@@ -178,7 +178,7 @@ export default function InsightsDashboard({ onBack, user, transactions }: Insigh
   }, [filteredTransactions]);
 
   const topCategories = useMemo(() => {
-    return Object.entries(spendingData.categoryTotals)
+    return (Object.entries(spendingData.categoryTotals) as [string, number][])
       .sort(([, a], [, b]) => b - a)
       .slice(0, 5)
       .map(([category, amount]) => ({
@@ -247,12 +247,12 @@ export default function InsightsDashboard({ onBack, user, transactions }: Insigh
                 <p className="font-medium text-gray-900 text-sm">{insight.title}</p>
                 <p className="text-xs text-gray-600">{insight.description}</p>
               </div>
-              {insight.type === 'trend' && (
+              {insight.type === 'trend' && insight.change !== undefined && (
                 <span className={`text-xs font-medium ${insight.positive ? 'text-green-600' : 'text-red-600'}`}>
                   {insight.change > 0 ? '+' : ''}{insight.change}%
                 </span>
               )}
-              {insight.type === 'suggestion' && (
+              {insight.type === 'suggestion' && insight.savings !== undefined && (
                 <span className="text-xs font-medium text-purple-600">
                   ${insight.savings}/mo
                 </span>
