@@ -1,0 +1,58 @@
+graph TD
+    %% Define Styles for a cleaner look
+    classDef default fill:#fff,stroke:#333,stroke-width:1px;
+    classDef group fill:#f9f9f9,stroke:#aaa,stroke-width:2px,stroke-dasharray: 5 5;
+    classDef label fill:#e0e0e0,stroke:#333,color:#000;
+
+    %% Main Structure
+    subgraph User Facing
+        App[Next.js App]
+    end
+
+    subgraph Backend Infrastructure
+        APIGateway[API Gateway]
+
+        subgraph Microservices
+            Auth[Auth Service]
+            Chat[Chat Service]
+            Insights[Insights Service]
+            Ingestion[Ingestion Service]
+            Notification[Notification Service]
+        end
+
+        subgraph Data Stores
+            DB["Primary Database <br> (Transactions, Users, Insights)"]
+        end
+    end
+
+    subgraph External Services
+        GoogleWallet[Google Wallet API]
+        Gemini[Gemini API]
+        Firebase[Firebase Cloud Messaging]
+    end
+    
+    %% Connections
+    App -- API Requests --> APIGateway
+    APIGateway --> Auth
+    APIGateway --> Chat
+    APIGateway --> Insights
+    APIGateway --> Ingestion
+
+    Auth -- User Data --> DB
+    Auth -- Sync Data --> GoogleWallet
+    
+    Chat -- "Read/Write History" --> DB
+    Chat -- Generate Response --> Gemini
+
+    Insights -- Read Data --> DB
+    Insights -- Store Insights --> DB
+    Insights -- Trigger Alert --> Notification
+
+    Ingestion -- "Process & Store Data" --> DB
+    Ingestion -- "OCR / NLU" --> Gemini
+    
+    Notification -- Push Notification --> Firebase
+    Firebase --> App
+
+    %% Apply Styles to groups
+    class App,APIGateway,Auth,Chat,Insights,Ingestion,Notification,DB,GoogleWallet,Gemini,Firebase default;
