@@ -120,6 +120,10 @@ A modern, AI-powered web application for tracking transactions, managing receipt
 - Get personalized recommendations
 - Track financial goals and progress
 
+## Architecture
+![mermaid-flow-1x](https://github.com/user-attachments/assets/11c395aa-d07e-4cc6-9122-21c414b6bfc7)
+
+
 ## 📁 Project Structure
 
 ```
