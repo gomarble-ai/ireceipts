@@ -1,4 +1,4 @@
-# 🧾 Smart Transaction & Receipt Tracker
+# Smart Transaction & Receipt Tracker
 
 A modern, AI-powered web application for tracking transactions, managing receipts, and gaining insights into spending patterns. Built with Next.js 15, TypeScript, and integrated with Google Wallet and Gemini AI.
 
