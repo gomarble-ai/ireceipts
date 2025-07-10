@@ -26,7 +26,15 @@ import {
   Download,
   Share2,
   ZoomIn,
-  ZoomOut
+  ZoomOut,
+  Wallet,
+  QrCode,
+  MapPin,
+  Star,
+  Clock,
+  ArrowLeft,
+  CheckCircle,
+  RefreshCw
 } from 'lucide-react';
 
 interface HomeDashboardProps {
@@ -141,6 +149,100 @@ const insights = [
   }
 ];
 
+// Dummy Google Passes data
+const googlePasses = [
+  {
+    id: 'pass001',
+    type: 'boarding_pass',
+    title: 'United Airlines',
+    subtitle: 'Flight UA1234',
+    description: 'SFO → LAX',
+    date: '2024-01-15',
+    time: '14:30',
+    status: 'active',
+    color: 'bg-blue-600',
+    icon: '✈️',
+    details: {
+      passengerName: 'John Doe',
+      seat: '12A',
+      gate: 'B15',
+      terminal: 'Terminal 3'
+    }
+  },
+  {
+    id: 'pass002',
+    type: 'event_ticket',
+    title: 'Concert at Madison Square Garden',
+    subtitle: 'The Weeknd - After Hours Tour',
+    description: 'Section 101, Row 5, Seat 12',
+    date: '2024-01-20',
+    time: '20:00',
+    status: 'active',
+    color: 'bg-purple-600',
+    icon: '🎵',
+    details: {
+      venue: 'Madison Square Garden',
+      section: '101',
+      row: '5',
+      seat: '12'
+    }
+  },
+  {
+    id: 'pass003',
+    type: 'coupon',
+    title: 'Starbucks',
+    subtitle: '20% Off Any Drink',
+    description: 'Valid until Jan 31, 2024',
+    date: '2024-01-31',
+    time: '23:59',
+    status: 'active',
+    color: 'bg-green-600',
+    icon: '☕',
+    details: {
+      discount: '20%',
+      validUntil: '2024-01-31',
+      storeLocation: 'Any Starbucks location'
+    }
+  },
+  {
+    id: 'pass004',
+    type: 'loyalty_card',
+    title: 'Subway Rewards',
+    subtitle: 'Gold Member',
+    description: '1,250 points available',
+    date: '2024-12-31',
+    time: '23:59',
+    status: 'active',
+    color: 'bg-yellow-600',
+    icon: '🥪',
+    details: {
+      points: '1,250',
+      tier: 'Gold',
+      nextReward: '500 points to next reward'
+    }
+  },
+  {
+    id: 'pass005',
+    type: 'boarding_pass',
+    title: 'American Airlines',
+    subtitle: 'Flight AA5678',
+    description: 'LAX → JFK',
+    date: '2024-01-10',
+    time: '09:15',
+    status: 'expired',
+    color: 'bg-gray-500',
+    icon: '✈️',
+    details: {
+      passengerName: 'John Doe',
+      seat: '8C',
+      gate: 'A12',
+      terminal: 'Terminal 1'
+    }
+  }
+];
+
+type PassesStep = 'list' | 'camera' | 'processing' | 'success';
+
 export default function HomeDashboard({ user, onNavigate }: HomeDashboardProps) {
   const [activeTab, setActiveTab] = useState('home');
   const [searchQuery, setSearchQuery] = useState('');
@@ -156,6 +258,13 @@ export default function HomeDashboard({ user, onNavigate }: HomeDashboardProps) 
     actionType: 'cancel' | 'manage';
     onConfirm?: () => void;
   } | null>(null);
+
+  // New state for Google Passes
+  const [showPassesModal, setShowPassesModal] = useState(false);
+  const [selectedPass, setSelectedPass] = useState<any>(null);
+  const [showPassDetails, setShowPassDetails] = useState(false);
+  const [passesStep, setPassesStep] = useState<PassesStep>('list');
+  const [processingProgress, setProcessingProgress] = useState(0);
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
@@ -179,11 +288,11 @@ export default function HomeDashboard({ user, onNavigate }: HomeDashboardProps) 
       case 'scan':
         onNavigate('scan-upload');
         break;
-      case 'upload':
-        onNavigate('scan-upload');
+      case 'passes':
+        setShowPassesModal(true);
         break;
       case 'add':
-        onNavigate('scan-upload'); // Navigate to scan-upload which has manual entry options
+        onNavigate('scan-upload');
         break;
       case 'voice':
         onNavigate('chat-query');
@@ -211,66 +320,54 @@ export default function HomeDashboard({ user, onNavigate }: HomeDashboardProps) 
       case 'profile':
         onNavigate('profile-management');
         break;
+      default:
+        console.log(`Tab ${tab} clicked`);
     }
   };
 
   const handleTransactionClick = (transactionId: string) => {
-    // Navigate to transactions advanced view
-    onNavigate('transactions-advanced');
+    console.log(`Transaction ${transactionId} clicked`);
   };
 
   const handleInsightAction = (action: string, actionType: string) => {
-    switch (action) {
-      case 'View Budget':
-      case 'Adjust Budget':
-        onNavigate('insights-dashboard');
-        break;
-      case 'Cancel Now':
+    if (actionType === 'external') {
+      // Handle external actions like canceling subscriptions
+      if (action === 'Cancel Now') {
         setActionModalContent({
-          title: 'Cancel Spotify Premium',
-          message: 'Are you sure you want to cancel your Spotify Premium subscription? You\'ll lose access to premium features immediately.',
+          title: 'Cancel Subscription',
+          message: 'Are you sure you want to cancel your Spotify Premium subscription? This action cannot be undone.',
           actionType: 'cancel',
           onConfirm: () => {
-            // In a real app, this would call the cancellation API
-            console.log('Spotify subscription cancelled');
+            console.log('Subscription cancelled');
             setShowActionModal(false);
-            // Show success feedback
-            setTimeout(() => {
-              setActionModalContent({
-                title: 'Subscription Cancelled',
-                message: 'Your Spotify Premium subscription has been successfully cancelled. You\'ll save $12/month starting next billing cycle.',
-                actionType: 'cancel'
-              });
-              setShowActionModal(true);
-            }, 500);
+            setActionModalContent(null);
           }
         });
-        setShowActionModal(true);
-        break;
-      case 'Manage':
+      } else if (action === 'Manage') {
         setActionModalContent({
-          title: 'Manage Adobe Creative Suite',
-          message: 'You\'ll be redirected to Adobe\'s website to manage your subscription, billing, and renewal settings.',
+          title: 'Manage Subscription',
+          message: 'You will be redirected to Adobe\'s website to manage your Creative Cloud subscription.',
           actionType: 'manage',
           onConfirm: () => {
-            // In a real app, this would open external link
-            console.log('Redirecting to Adobe management page');
+            console.log('Redirect to Adobe website');
             setShowActionModal(false);
-            // Simulate external redirect
-            setTimeout(() => {
-              setActionModalContent({
-                title: 'Redirected Successfully',
-                message: 'You\'ve been redirected to Adobe\'s subscription management page. Manage your billing and auto-renewal settings there.',
-                actionType: 'manage'
-              });
-              setShowActionModal(true);
-            }, 500);
+            setActionModalContent(null);
           }
         });
-        setShowActionModal(true);
-        break;
-      default:
-        onNavigate('insights-dashboard');
+      }
+      setShowActionModal(true);
+    } else {
+      // Handle navigation actions
+      switch (action) {
+        case 'View Budget':
+          onNavigate('insights-dashboard');
+          break;
+        case 'Adjust Budget':
+          onNavigate('insights-dashboard');
+          break;
+        default:
+          console.log(`Action ${action} clicked`);
+      }
     }
   };
 
@@ -285,22 +382,182 @@ export default function HomeDashboard({ user, onNavigate }: HomeDashboardProps) 
   };
 
   const handleDownloadReceipt = () => {
-    if (selectedReceipt?.receiptUrl) {
-      // In a real app, this would download the receipt
-      console.log('Downloading receipt:', selectedReceipt.receiptUrl);
-    }
+    console.log('Download receipt');
   };
 
   const handleShareReceipt = () => {
-    if (selectedReceipt?.receiptUrl) {
-      // In a real app, this would share the receipt
-      console.log('Sharing receipt:', selectedReceipt.receiptUrl);
-    }
+    console.log('Share receipt');
   };
 
   const handleCloseActionModal = () => {
     setShowActionModal(false);
     setActionModalContent(null);
+  };
+
+  // New Google Passes handlers
+  const handlePassClick = (pass: any) => {
+    setSelectedPass(pass);
+    setShowPassDetails(true);
+  };
+
+  const handleClosePassesModal = () => {
+    setShowPassesModal(false);
+    setSelectedPass(null);
+    setShowPassDetails(false);
+    setPassesStep('list');
+  };
+
+  const handleAddPass = () => {
+    setPassesStep('camera');
+  };
+
+  const handleCapturePass = () => {
+    setPassesStep('processing');
+    setProcessingProgress(0);
+    
+    // Simulate processing
+    const interval = setInterval(() => {
+      setProcessingProgress(prev => {
+        if (prev >= 100) {
+          clearInterval(interval);
+          setPassesStep('success');
+          return 100;
+        }
+        return prev + 4;
+      });
+    }, 100);
+  };
+
+  const handleProcessingComplete = () => {
+    setPassesStep('list');
+    setProcessingProgress(0);
+  };
+
+  const renderPassesContent = () => {
+    switch (passesStep) {
+      case 'camera':
+        return (
+          <div className="flex flex-col h-full">
+            <div className="flex items-center justify-between p-4 border-b border-gray-200">
+              <button
+                onClick={() => setPassesStep('list')}
+                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+              >
+                <ArrowLeft className="w-5 h-5 text-gray-600" />
+              </button>
+              <h3 className="text-lg font-semibold text-gray-900">Scan Pass</h3>
+              <div className="w-9" />
+            </div>
+            
+            <div className="flex-1 bg-black relative overflow-hidden">
+              <div className="absolute inset-0 flex items-center justify-center">
+                <div className="w-80 h-48 border-2 border-white rounded-lg opacity-50"></div>
+              </div>
+              <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2">
+                <button
+                  onClick={handleCapturePass}
+                  className="w-16 h-16 bg-white rounded-full flex items-center justify-center shadow-lg hover:bg-gray-100 transition-colors"
+                >
+                  <Camera className="w-8 h-8 text-gray-900" />
+                </button>
+              </div>
+            </div>
+            
+            <div className="p-4 bg-white">
+              <p className="text-sm text-gray-600 text-center">
+                Position the pass or QR code within the frame and tap to capture
+              </p>
+            </div>
+          </div>
+        );
+
+      case 'processing':
+        return (
+          <div className="flex flex-col h-full items-center justify-center p-8">
+            <div className="w-20 h-20 bg-blue-500 rounded-full flex items-center justify-center mb-6">
+              <RefreshCw className="w-10 h-10 text-white animate-spin" />
+            </div>
+            <h3 className="text-xl font-semibold text-gray-900 mb-2">Processing Pass</h3>
+            <p className="text-gray-600 text-center mb-6">
+              Analyzing the pass and extracting details...
+            </p>
+            <div className="w-full max-w-xs bg-gray-200 rounded-full h-2">
+              <div 
+                className="bg-blue-500 h-2 rounded-full transition-all duration-300"
+                style={{ width: `${processingProgress}%` }}
+              />
+            </div>
+            <p className="text-sm text-gray-500 mt-2">{processingProgress}%</p>
+          </div>
+        );
+
+      case 'success':
+        return (
+          <div className="flex flex-col h-full items-center justify-center p-8">
+            <div className="w-20 h-20 bg-green-500 rounded-full flex items-center justify-center mb-6">
+              <CheckCircle className="w-10 h-10 text-white" />
+            </div>
+            <h3 className="text-xl font-semibold text-gray-900 mb-2">Pass Added!</h3>
+            <p className="text-gray-600 text-center mb-6">
+              Your concert ticket has been successfully added to your wallet.
+            </p>
+            <button
+              onClick={handleProcessingComplete}
+              className="px-6 py-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
+            >
+              View Passes
+            </button>
+          </div>
+        );
+
+      default:
+        return (
+          <div className="p-4">
+            <div className="grid grid-cols-1 gap-4">
+              {googlePasses.map((pass) => (
+                <button
+                  key={pass.id}
+                  onClick={() => handlePassClick(pass)}
+                  className={`w-full p-4 rounded-xl border-2 transition-all text-left ${
+                    pass.status === 'active'
+                      ? 'border-gray-200 hover:border-blue-300 bg-white'
+                      : 'border-gray-100 bg-gray-50 opacity-60'
+                  }`}
+                >
+                  <div className="flex items-start justify-between">
+                    <div className="flex items-start space-x-3">
+                      <div className={`w-12 h-12 ${pass.color} rounded-lg flex items-center justify-center text-white text-xl`}>
+                        {pass.icon}
+                      </div>
+                      <div className="flex-1">
+                        <h4 className="font-semibold text-gray-900 mb-1">{pass.title}</h4>
+                        <p className="text-sm text-gray-600 mb-1">{pass.subtitle}</p>
+                        <p className="text-xs text-gray-500">{pass.description}</p>
+                        <div className="flex items-center mt-2 space-x-2">
+                          <Calendar className="w-3 h-3 text-gray-400" />
+                          <span className="text-xs text-gray-500">
+                            {new Date(pass.date).toLocaleDateString()} at {pass.time}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="flex flex-col items-end space-y-1">
+                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                        pass.status === 'active'
+                          ? 'bg-green-100 text-green-800'
+                          : 'bg-gray-100 text-gray-600'
+                      }`}>
+                        {pass.status === 'active' ? 'Active' : 'Expired'}
+                      </span>
+                      <QrCode className="w-4 h-4 text-gray-400" />
+                    </div>
+                  </div>
+                </button>
+              ))}
+            </div>
+          </div>
+        );
+    }
   };
 
   return (
@@ -373,11 +630,11 @@ export default function HomeDashboard({ user, onNavigate }: HomeDashboardProps) 
               <span className="text-sm font-medium text-blue-900">Scan Receipt</span>
             </button>
             <button
-              onClick={() => handleQuickAction('upload')}
+              onClick={() => handleQuickAction('passes')}
               className="flex flex-col items-center space-y-2 p-4 bg-green-50 hover:bg-green-100 rounded-xl transition-colors"
             >
-              <Upload className="w-6 h-6 text-green-600" />
-              <span className="text-sm font-medium text-green-900">Upload Doc</span>
+              <Wallet className="w-6 h-6 text-green-600" />
+              <span className="text-sm font-medium text-green-900">Google Passes</span>
             </button>
             <button
               onClick={() => handleQuickAction('add')}
@@ -410,7 +667,8 @@ export default function HomeDashboard({ user, onNavigate }: HomeDashboardProps) 
           
           <div className="space-y-3">
             {recentTransactions.map((transaction) => (
-              <button
+              <div
+                role="button"
                 key={transaction.id}
                 onClick={() => handleTransactionClick(transaction.id)}
                 className="w-full flex items-center justify-between p-4 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors cursor-pointer"
@@ -458,7 +716,7 @@ export default function HomeDashboard({ user, onNavigate }: HomeDashboardProps) 
                     </button>
                   )}
                 </div>
-              </button>
+              </div>
             ))}
           </div>
         </div>
@@ -536,6 +794,111 @@ export default function HomeDashboard({ user, onNavigate }: HomeDashboardProps) 
           ))}
         </div>
       </div>
+
+      {/* Google Passes Modal (Fullscreen) */}
+      {showPassesModal && (
+        <div className="fixed inset-0 bg-white flex flex-col z-50">
+          {/* Outer Header with title, add and close */}
+          <div className="flex items-center justify-between p-4 border-b border-gray-200">
+            <h3 className="text-lg font-semibold text-gray-900">Google Passes</h3>
+            <div className="flex space-x-2">
+              <button
+                onClick={handleAddPass}
+                className="p-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
+                aria-label="Add Pass"
+              >
+                <Plus className="w-5 h-5" />
+              </button>
+              <button
+                onClick={handleClosePassesModal}
+                className="p-2 text-gray-400 hover:text-gray-600 transition-colors"
+                aria-label="Close Passes"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+          </div>
+          {/* Content */}
+          <div className="flex-1 overflow-auto">
+            {renderPassesContent()}
+          </div>
+        </div>
+      )}
+
+      {/* Pass Details Modal */}
+      {showPassDetails && selectedPass && (
+        <div className="fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg shadow-xl max-w-sm w-full">
+            <div className="flex items-center justify-between p-4 border-b border-gray-200">
+              <h3 className="text-lg font-semibold text-gray-900">Pass Details</h3>
+              <button
+                onClick={() => setShowPassDetails(false)}
+                className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            
+            <div className="p-4">
+              <div className={`w-full ${selectedPass.color} rounded-lg p-4 text-white text-center mb-4`}>
+                <div className="text-3xl mb-2">{selectedPass.icon}</div>
+                <h4 className="font-bold text-lg">{selectedPass.title}</h4>
+                <p className="text-sm opacity-90">{selectedPass.subtitle}</p>
+              </div>
+              
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-medium text-gray-700">Description:</span>
+                  <span className="text-sm text-gray-600">{selectedPass.description}</span>
+                </div>
+                
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-medium text-gray-700">Date:</span>
+                  <span className="text-sm text-gray-600">
+                    {new Date(selectedPass.date).toLocaleDateString()}
+                  </span>
+                </div>
+                
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-medium text-gray-700">Time:</span>
+                  <span className="text-sm text-gray-600">{selectedPass.time}</span>
+                </div>
+                
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-medium text-gray-700">Status:</span>
+                  <span className={`text-sm px-2 py-1 rounded-full ${
+                    selectedPass.status === 'active' 
+                      ? 'bg-green-100 text-green-800' 
+                      : 'bg-gray-100 text-gray-600'
+                  }`}>
+                    {selectedPass.status === 'active' ? 'Active' : 'Expired'}
+                  </span>
+                </div>
+                
+                                 {Object.entries(selectedPass.details).map(([key, value]) => (
+                   <div key={key} className="flex items-center justify-between">
+                     <span className="text-sm font-medium text-gray-700 capitalize">
+                       {key.replace(/([A-Z])/g, ' $1').trim()}:
+                     </span>
+                     <span className="text-sm text-gray-600">{String(value)}</span>
+                   </div>
+                 ))}
+              </div>
+              
+              <div className="mt-6 pt-4 border-t border-gray-200">
+                <div className="flex items-center justify-center">
+                  <div className="w-32 h-32 bg-gray-100 rounded-lg flex items-center justify-center">
+                    <QrCode className="w-16 h-16 text-gray-400" />
+                  </div>
+                </div>
+                <p className="text-xs text-gray-500 text-center mt-2">
+                  Show this QR code at the venue
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Receipt Modal */}
       {showReceiptModal && selectedReceipt && (
